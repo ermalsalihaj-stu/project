@@ -1,0 +1,5 @@
+privacy: ["gdpr", "pii", "personal data", "consent", "retention"]
+auth: ["login", "mfa", "sso", "oauth", "password", "token"]
+pricing: ["billing", "subscription", "refund", "invoice", "paywall", "payment"]
+platform: ["ios", "android", "api", "sdk", "browser", "chrome", "firefox"]
+accessibility: ["wcag", "screen reader", "aria", "contrast", "keyboard"]

@@ -1,0 +1,4 @@
+ignore_tags:
+  - spam
+  - internal-only
+  - out-of-scope
