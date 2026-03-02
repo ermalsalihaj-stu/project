@@ -1,1 +1,1 @@
-# project
+# ai-product-manager
