@@ -1,0 +1,8 @@
+Customer notes / insights (mixed sources)
+
+- Enterprise prospects say SSO is table-stakes. Without SAML/SSO they cannot pass security review.
+- New users report confusion during onboarding: too many fields, unclear next steps, and weak guidance.
+- Users are asking for a guided checklist or “setup assistant” to reduce time-to-value.
+- Some users abandon right after signup because they don’t know what to do first.
+- Support reports more tickets about login/reset and MFA confusion.
+- Teams with accessibility requirements flagged that some onboarding steps are hard with screen readers.

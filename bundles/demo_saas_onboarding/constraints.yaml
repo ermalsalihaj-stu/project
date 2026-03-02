@@ -1,0 +1,32 @@
+assumptions:
+  - We can ship an onboarding redesign without breaking existing users.
+  - SSO is required for enterprise pipeline within 1-2 quarters.
+
+privacy_risk:
+  level: high
+  notes:
+    - Proposed onboarding guidance may require tracking step-level behavior.
+    - Avoid collecting PII in event properties. Use hashed IDs where possible.
+
+security:
+  notes:
+    - SSO implementation must follow least privilege and secure token handling.
+    - MFA/reset flow must avoid information leakage (account enumeration).
+
+compliance:
+  notes:
+    - GDPR: require clear consent for analytics where needed.
+    - Data retention limits for event logs.
+
+accessibility:
+  level: medium
+  notes:
+    - Screen reader support in onboarding must meet baseline requirements (labels, focus order, contrast).
+
+tech_dependencies:
+  - Identity provider integration for SAML/SSO (platform/security review needed)
+  - Dashboard performance may need backend caching + query optimization
+
+release_constraints:
+  - MVP should be shipped behind a feature flag
+  - Must include rollback plan and monitoring dashboards

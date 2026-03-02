@@ -1,0 +1,9 @@
+id,source,created_at,title,description,priority,type,segment,affected_area
+T-101,Support,2026-02-10,Password reset email delayed,"Users report reset emails arrive 10–30 minutes late; some never arrive",High,Bug,SMB,Auth
+T-102,Sales,2026-02-11,SSO required for enterprise,"3 enterprise prospects require SAML/SSO to proceed with procurement",High,Feature,Enterprise,Auth
+T-103,Product,2026-02-12,Onboarding feels confusing,"Users get stuck on step 2/5; unclear instructions and too many fields",High,UX,All,Onboarding
+T-104,Support,2026-02-14,Dashboard loads slowly,"Reports take 5–7s to load; perceived as broken on slower networks",Medium,Performance,All,Analytics
+T-105,Customer Interview,2026-02-15,Need guidance during setup,"Customers ask for in-app tips or guided checklist; request AI help",Medium,Feature,SMB,Onboarding
+T-106,Internal QA,2026-02-18,Mobile layout breaks,"On smaller screens, buttons overlap and form fields shift off-screen",Medium,UX,All,UI
+T-107,Product,2026-02-20,Dark mode request,"Repeated request from users working at night; not blocking",Low,Feature,All,UI
+T-108,Support,2026-02-22,Increase in login-related tickets,"Ticket volume up; user confusion around MFA and reset flow",High,Bug,All,Auth

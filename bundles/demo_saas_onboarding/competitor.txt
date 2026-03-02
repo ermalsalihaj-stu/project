@@ -1,0 +1,6 @@
+Competitor / market notes (curated, lightweight)
+
+- Competitor Alpha released “Guided Onboarding” with an AI helper that suggests next steps and auto-fills common setup fields.
+- Competitor Beta offers SAML SSO and SCIM provisioning for enterprise tiers; marketed as “security-ready”.
+- Competitor Gamma published performance improvements for analytics dashboards (claims faster load times and caching).
+- General trend: buyers expect SSO and faster time-to-value; onboarding is a major differentiator in SaaS.
