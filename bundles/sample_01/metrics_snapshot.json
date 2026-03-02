@@ -1,0 +1,32 @@
+{
+  "time_window": "2026-01-15_to_2026-02-28",
+  "north_star_candidate": "Successful checkout completion rate (payment confirmed)",
+  "funnel": {
+    "cart_to_checkout_start": { "baseline": 0.72, "trend": "flat" },
+    "checkout_start_to_payment": { "baseline": 0.58, "trend": "down_12_percent_relative" },
+    "payment_to_confirmation": { "baseline": 0.91, "trend": "flat" }
+  },
+  "product_health": {
+    "checkout_abandonment_rate": { "baseline": 0.42, "current": 0.48, "trend": "up" },
+    "billing_support_tickets_weekly": { "baseline": 28, "current": 42, "trend": "up_50_percent" }
+  },
+  "guardrails": {
+    "payment_failure_rate": { "baseline": 0.03, "current": 0.04, "trend": "up" },
+    "billing_nps": { "baseline": 3.8, "current": 3.4, "trend": "down" }
+  },
+  "segments": {
+    "SMB": {
+      "checkout_completion": { "baseline": 0.52, "current": 0.45 },
+      "billing_tickets_per_1k": { "baseline": 12, "current": 18 }
+    },
+    "Enterprise": {
+      "checkout_completion": { "baseline": 0.61, "current": 0.55 },
+      "procurement_cycle_days": { "baseline": 14, "current": 21 }
+    }
+  },
+  "instrumentation_gaps": [
+    "Missing event: checkout_step_completed with step_id and drop_off_reason",
+    "No segment tag on billing events",
+    "No WCAG-related friction events (e.g. form_validation_error with a11y context)"
+  ]
+}
