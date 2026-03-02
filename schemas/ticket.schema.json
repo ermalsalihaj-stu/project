@@ -1,0 +1,40 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "ticket.schema.json",
+  "title": "Ticket",
+  "description": "Single ticket (Jira/ADO style)",
+  "type": "object",
+  "required": ["id", "title", "type"],
+  "properties": {
+    "id": { "type": "string", "description": "Unique ticket identifier" },
+    "key": { "type": "string", "description": "Project key + number (e.g. PROJ-123)" },
+    "title": { "type": "string", "description": "Short summary" },
+    "description": { "type": "string", "description": "Detailed description" },
+    "type": {
+      "type": "string",
+      "enum": ["Bug", "Feature", "Story", "Task", "Epic", "UX", "Performance"],
+      "description": "Ticket type"
+    },
+    "priority": {
+      "type": "string",
+      "enum": ["Critical", "High", "Medium", "Low"],
+      "description": "Priority level"
+    },
+    "status": { "type": "string", "description": "Current status" },
+    "source": { "type": "string", "description": "Origin: Support, Sales, Product, etc." },
+    "created_at": { "type": "string", "format": "date-time", "description": "Creation timestamp" },
+    "updated_at": { "type": "string", "format": "date-time", "description": "Last update" },
+    "segment": {
+      "type": ["string", "null"],
+      "enum": ["All", "SMB", "Enterprise", "Consumer", null],
+      "description": "Target user segment (optional)"
+    },
+    "affected_area": { "type": "string", "description": "Product area: Auth, Onboarding, Billing, etc." },
+    "acceptance_criteria": {
+      "type": ["array", "null"],
+      "items": { "type": "string" },
+      "description": "List of acceptance criteria (optional)"
+    },
+    "labels": { "type": "array", "items": { "type": "string" } }
+  }
+}

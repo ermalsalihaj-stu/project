@@ -1,0 +1,37 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "tickets.schema.json",
+  "title": "Tickets Export",
+  "description": "Array of tickets (Jira/ADO export format)",
+  "type": "object",
+  "required": ["tickets"],
+  "properties": {
+    "tickets": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/ticket" },
+      "minItems": 1
+    }
+  },
+  "$defs": {
+    "ticket": {
+      "type": "object",
+      "required": ["id", "title", "type"],
+      "properties": {
+        "id": { "type": "string" },
+        "key": { "type": "string" },
+        "title": { "type": "string" },
+        "description": { "type": "string" },
+        "type": { "type": "string", "enum": ["Bug", "Feature", "Story", "Task", "Epic", "UX", "Performance"] },
+        "priority": { "type": "string", "enum": ["Critical", "High", "Medium", "Low"] },
+        "status": { "type": "string" },
+        "source": { "type": "string" },
+        "created_at": { "type": "string" },
+        "updated_at": { "type": "string" },
+        "segment": { "type": ["string", "null"], "enum": ["All", "SMB", "Enterprise", "Consumer", null] },
+        "affected_area": { "type": "string" },
+        "acceptance_criteria": { "type": ["array", "null"], "items": { "type": "string" } },
+        "labels": { "type": "array", "items": { "type": "string" } }
+      }
+    }
+  }
+}

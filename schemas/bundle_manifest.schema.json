@@ -1,0 +1,42 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "bundle_manifest.schema.json",
+  "title": "Product Bundle Manifest",
+  "description": "Metadata and file inventory for an AIPM Product Bundle",
+  "type": "object",
+  "required": ["bundle_id", "created_at", "source", "files"],
+  "properties": {
+    "bundle_id": {
+      "type": "string",
+      "pattern": "^[a-zA-Z0-9_-]+$",
+      "description": "Unique identifier for the bundle (e.g. sample_01)"
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date",
+      "description": "ISO date when the bundle was created"
+    },
+    "source": {
+      "type": "string",
+      "enum": ["local", "jira", "ado", "manual"],
+      "description": "Origin of the bundle data"
+    },
+    "files": {
+      "type": "object",
+      "description": "Map of logical file roles to filenames (relative to bundle root)",
+      "required": ["request", "tickets", "customer_notes", "metrics_snapshot", "competitors"],
+      "properties": {
+        "request": { "type": "string", "description": "Product request / prompt file" },
+        "tickets": { "type": "string", "description": "Tickets export (JSON or CSV)" },
+        "customer_notes": { "type": "string", "description": "Customer feedback / NPS / interview notes" },
+        "metrics_snapshot": { "type": "string", "description": "Metrics baseline and segmentations" },
+        "competitors": { "type": "string", "description": "Competitor analysis" }
+      },
+      "additionalProperties": { "type": "string" }
+    },
+    "docs_dir": {
+      "type": "string",
+      "description": "Optional subfolder containing supporting documents"
+    }
+  }
+}
