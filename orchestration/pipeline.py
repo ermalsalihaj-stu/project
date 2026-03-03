@@ -4,7 +4,7 @@ from __future__ import annotations
 from datetime import datetime
 from pathlib import Path
 
-from tools.io_utils import write_json, write_text
+from tools.io_utils import read_json, write_json, write_text
 
 # Project root = parent of orchestration/
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
@@ -75,6 +75,20 @@ def run_pipeline(bundle_path: str, out_dir: str | None = None) -> str:
         from tools.logging_utils import get_logger
 
         get_logger("pipeline").warning("Intake agent failed: %s; wrote placeholder context_packet.json", e)
+
+    # Metrics & Analytics Agent (Agent D): findings_metrics.json
+    context_path = target_dir / "context_packet.json"
+    if context_path.exists():
+        try:
+            context_packet = read_json(context_path)
+            from agents.metrics_analytics_agent import run as metrics_run
+
+            findings = metrics_run(context_packet)
+            write_json(target_dir / "findings_metrics.json", findings)
+        except Exception as e:
+            from tools.logging_utils import get_logger
+
+            get_logger("pipeline").warning("Metrics analytics agent failed: %s", e)
 
     # Placeholders for other artifacts
     _create_placeholders(target_dir)
