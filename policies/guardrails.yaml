@@ -1,0 +1,67 @@
+version: "1.0"
+
+# Decision severity ranking (higher = more conservative)
+decision_rank:
+  "Do not pursue": 3
+  "Validate first": 2
+  "Proceed with mitigations": 1
+  "Proceed": 0
+
+# Map your Intake risk labels -> broader categories (schema enum)
+risk_category_map:
+  privacy: privacy
+  auth: security
+  accessibility: accessibility
+  pricing: compliance
+  platform: other
+
+# What keywords count as “mitigation already planned” inside requirements/backlog text
+mitigation_keywords:
+  pii_classification: ["pii", "personal data", "gdpr", "data classification"]
+  data_retention_policy: ["retention", "delete", "deletion", "data retention"]
+  data_residency: ["residency", "eu", "region", "data location"]
+  wcag_audit: ["wcag", "a11y", "accessibility audit"]
+  aria_labels:
+    ["aria", "screen reader", "label association", "accessible labels"]
+  keyboard_nav: ["keyboard navigation", "focus state", "tab order"]
+  mfa_regression_tests: ["mfa", "regression test", "login loop", "auth test"]
+  threat_model: ["threat model", "security review", "abuse case"]
+  safe_errors: ["error handling", "no sensitive info", "redact", "mask"]
+
+rules:
+  - id: R_PRIVACY_VALIDATE_FIRST
+    when:
+      risk: privacy
+      min_evidence: 1
+      require_mitigations:
+        ["pii_classification", "data_retention_policy", "data_residency"]
+    decision: "Validate first"
+    required_mitigations:
+      - "Document what billing data is PII and produce a data-flow diagram"
+      - "Define retention + deletion policy for billing data"
+      - "Confirm EU data residency constraints and storage region"
+
+  - id: R_A11Y_PROCEED_WITH_MITIGATIONS
+    when:
+      risk: accessibility
+      min_evidence: 1
+      require_mitigations: ["wcag_audit", "aria_labels", "keyboard_nav"]
+    decision: "Proceed with mitigations"
+    required_mitigations:
+      - "Run WCAG 2.1 audit for checkout flow"
+      - "Fix label-to-input association and ARIA attributes"
+      - "Ensure keyboard navigation + focus visibility"
+
+  - id: R_AUTH_PROCEED_WITH_MITIGATIONS
+    when:
+      risk: auth
+      min_evidence: 1
+      require_mitigations:
+        ["mfa_regression_tests", "threat_model", "safe_errors"]
+    decision: "Proceed with mitigations"
+    required_mitigations:
+      - "Add MFA regression tests for billing-related flows"
+      - "Do a lightweight threat model for login/billing update paths"
+      - "Ensure auth/payment errors don’t leak sensitive info"
+
+default_decision: "Proceed"

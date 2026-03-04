@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 
 from tools.io_utils import read_json, write_json, write_text
@@ -217,6 +217,29 @@ def run_pipeline(bundle_path: str, out_dir: str | None = None, strict: bool = Fa
                     },
                 },
                 "build_vs_buy_triggers": [],
+                "warnings": [str(e)],
+            },
+        )
+
+        # 5b) Risk / Guardrails Agent (Agent G): findings_risk.json (always write something)
+    try:
+        from agents.risk_guardrails_agent import run as risk_run
+
+        # Pass requirements findings if you have them (risk agent uses this to detect mitigations)
+        risk_findings = risk_run(context_packet, findings_requirements=req_findings)
+        write_json(target_dir / "findings_risk.json", risk_findings)
+    except Exception as e:
+        log.warning("Risk guardrails agent failed: %s", e)
+        write_json(
+            target_dir / "findings_risk.json",
+            {
+                "bundle_id": bundle_name,
+                "generated_at": datetime.now(timezone.utc).isoformat(),
+                "gating_decision": "Validate first",
+                "risks": [],
+                "required_mitigations": [],
+                "policy_pack": {"version": "unknown", "applied_rule_ids": []},
+                "policy_evaluation": [],
                 "warnings": [str(e)],
             },
         )
