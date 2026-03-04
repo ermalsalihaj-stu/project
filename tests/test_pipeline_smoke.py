@@ -39,4 +39,5 @@ def test_pipeline_creates_core_outputs(tmp_path: Path):
     assert (out_dir / "context_packet.json").exists()
     assert (out_dir / "findings_metrics.json").exists()
     assert (out_dir / "findings_requirements.json").exists()
+    assert (out_dir / "findings_feasibility.json").exists()
     assert (out_dir / "backlog.csv").exists()
