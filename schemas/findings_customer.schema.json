@@ -1,0 +1,91 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "findings_customer.schema.json",
+  "title": "Findings Customer (Customer Insights)",
+  "description": "Output of Customer Insights Agent: segments, JTBD, insights with confidence, research gaps, validation plan",
+  "type": "object",
+  "required": [
+    "bundle_id",
+    "segments",
+    "jtbd",
+    "insights",
+    "research_gaps",
+    "validation_plan"
+  ],
+  "properties": {
+    "bundle_id": { "type": "string" },
+    "segments": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "name", "description"],
+        "properties": {
+          "id": { "type": "string" },
+          "name": { "type": "string" },
+          "description": { "type": "string" }
+        }
+      },
+      "minItems": 2
+    },
+    "jtbd": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "statement", "context"],
+        "properties": {
+          "id": { "type": "string" },
+          "statement": { "type": "string" },
+          "context": { "type": "string" },
+          "related_segments": { "type": "array", "items": { "type": "string" } }
+        }
+      },
+      "minItems": 1
+    },
+    "insights": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "statement", "confidence", "impacted_segments"],
+        "properties": {
+          "id": { "type": "string" },
+          "statement": { "type": "string" },
+          "evidence_refs": {
+            "type": "array",
+            "items": { "type": "string" },
+            "description": "Ticket IDs or snippet references"
+          },
+          "confidence": {
+            "type": "string",
+            "enum": ["Validated", "Directional", "Speculative"]
+          },
+          "impacted_segments": {
+            "type": "array",
+            "items": { "type": "string" }
+          }
+        }
+      },
+      "minItems": 5,
+      "maxItems": 20
+    },
+    "research_gaps": {
+      "type": "array",
+      "items": { "type": "string" },
+      "minItems": 3,
+      "maxItems": 10
+    },
+    "validation_plan": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["step", "method", "goal"],
+        "properties": {
+          "step": { "type": "integer" },
+          "method": { "type": "string" },
+          "goal": { "type": "string" }
+        }
+      },
+      "minItems": 3,
+      "maxItems": 8
+    }
+  }
+}
