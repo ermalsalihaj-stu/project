@@ -1,0 +1,197 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "findings_feasibility.schema.json",
+  "title": "Tech Feasibility & Delivery Findings",
+  "description": "Output of Agent F - dependencies, constraints, complexity buckets, phased delivery, and build-vs-buy triggers",
+  "type": "object",
+  "required": [
+    "bundle_id",
+    "dependencies",
+    "constraints",
+    "complexity",
+    "phases"
+  ],
+  "properties": {
+    "bundle_id": { "type": "string" },
+    "dependencies": {
+      "type": "array",
+      "description": "Key technical dependencies such as payment providers, auth/SSO, data stores, analytics SDKs, external APIs, and infra components.",
+      "items": {
+        "type": "object",
+        "required": ["id", "name", "category", "criticality"],
+        "properties": {
+          "id": { "type": "string" },
+          "name": { "type": "string" },
+          "category": {
+            "type": "string",
+            "enum": [
+              "payment",
+              "auth_sso",
+              "data_store",
+              "analytics",
+              "queue_stream",
+              "external_api",
+              "infrastructure",
+              "other"
+            ]
+          },
+          "description": { "type": "string" },
+          "criticality": {
+            "type": "string",
+            "enum": ["Must", "Should", "Could"]
+          },
+          "phases": {
+            "type": "array",
+            "description": "Phases where this dependency is required or should be planned.",
+            "items": {
+              "type": "string",
+              "enum": ["MVP", "V1", "V2"]
+            }
+          },
+          "build_vs_buy_hint": {
+            "type": "string",
+            "description": "Short hint on build-vs-buy for this dependency."
+          }
+        }
+      }
+    },
+    "constraints": {
+      "type": "array",
+      "description": "Key technical or product constraints that shape design and rollout (latency, data retention, permissions, platform limitations, compliance).",
+      "items": {
+        "type": "object",
+        "required": ["type", "description"],
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": [
+              "latency",
+              "throughput",
+              "data_retention",
+              "storage_limits",
+              "permissions",
+              "compliance",
+              "platform",
+              "availability",
+              "other"
+            ]
+          },
+          "description": { "type": "string" },
+          "phase_impact": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": ["MVP", "V1", "V2"]
+            }
+          }
+        }
+      }
+    },
+    "complexity": {
+      "type": "array",
+      "description": "Complexity buckets for key topics/areas with rationale.",
+      "items": {
+        "type": "object",
+        "required": ["topic", "bucket", "reason"],
+        "properties": {
+          "topic": {
+            "type": "string",
+            "description": "Area or capability being assessed, e.g. 'auth/SSO', 'payments', 'data model & migrations'."
+          },
+          "bucket": {
+            "type": "string",
+            "enum": ["Low", "Medium", "High"]
+          },
+          "reason": { "type": "string" },
+          "related_dependencies": {
+            "type": "array",
+            "items": { "type": "string" }
+          },
+          "related_requirements": {
+            "type": "array",
+            "items": { "type": "string" }
+          }
+        }
+      }
+    },
+    "phases": {
+      "type": "object",
+      "description": "Phased delivery plan across MVP, V1, V2.",
+      "required": ["MVP", "V1", "V2"],
+      "properties": {
+        "MVP": {
+          "type": "object",
+          "required": ["in_scope", "out_of_scope", "prerequisites"],
+          "properties": {
+            "in_scope": {
+              "type": "array",
+              "items": { "type": "string" }
+            },
+            "out_of_scope": {
+              "type": "array",
+              "items": { "type": "string" }
+            },
+            "prerequisites": {
+              "type": "array",
+              "items": { "type": "string" }
+            }
+          }
+        },
+        "V1": {
+          "type": "object",
+          "required": ["in_scope", "out_of_scope", "prerequisites"],
+          "properties": {
+            "in_scope": {
+              "type": "array",
+              "items": { "type": "string" }
+            },
+            "out_of_scope": {
+              "type": "array",
+              "items": { "type": "string" }
+            },
+            "prerequisites": {
+              "type": "array",
+              "items": { "type": "string" }
+            }
+          }
+        },
+        "V2": {
+          "type": "object",
+          "required": ["in_scope", "out_of_scope", "prerequisites"],
+          "properties": {
+            "in_scope": {
+              "type": "array",
+              "items": { "type": "string" }
+            },
+            "out_of_scope": {
+              "type": "array",
+              "items": { "type": "string" }
+            },
+            "prerequisites": {
+              "type": "array",
+              "items": { "type": "string" }
+            }
+          }
+        }
+      }
+    },
+    "build_vs_buy_triggers": {
+      "type": "array",
+      "description": "Explicit triggers or conditions under which to consider vendors vs in-house builds.",
+      "items": {
+        "type": "object",
+        "required": ["condition", "recommendation"],
+        "properties": {
+          "condition": { "type": "string" },
+          "recommendation": { "type": "string" },
+          "related_topic": { "type": "string" }
+        }
+      }
+    },
+    "warnings": {
+      "type": "array",
+      "items": { "type": "string" }
+    }
+  }
+}
+
