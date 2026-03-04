@@ -1,0 +1,97 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "findings_risk.schema.json",
+  "title": "Risk / Guardrails Findings",
+  "description": "Output of Risk Guardrails Agent: risks, mitigations, and gating decision based on policy pack",
+  "type": "object",
+  "required": [
+    "bundle_id",
+    "generated_at",
+    "gating_decision",
+    "risks",
+    "required_mitigations",
+    "policy_pack",
+    "policy_evaluation",
+    "warnings"
+  ],
+  "properties": {
+    "bundle_id": { "type": "string" },
+    "generated_at": { "type": "string", "format": "date-time" },
+    "gating_decision": {
+      "type": "string",
+      "enum": [
+        "Proceed",
+        "Proceed with mitigations",
+        "Validate first",
+        "Do not pursue"
+      ]
+    },
+    "risks": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "category",
+          "source_risk",
+          "severity",
+          "description",
+          "evidence_refs"
+        ],
+        "properties": {
+          "id": { "type": "string" },
+          "category": {
+            "type": "string",
+            "enum": [
+              "privacy",
+              "security",
+              "compliance",
+              "accessibility",
+              "other"
+            ]
+          },
+          "source_risk": { "type": "string" },
+          "severity": {
+            "type": "string",
+            "enum": ["low", "medium", "high", "critical"]
+          },
+          "description": { "type": "string" },
+          "evidence_refs": { "type": "array", "items": { "type": "string" } }
+        }
+      }
+    },
+    "required_mitigations": { "type": "array", "items": { "type": "string" } },
+    "policy_pack": {
+      "type": "object",
+      "required": ["version", "applied_rule_ids"],
+      "properties": {
+        "version": { "type": "string" },
+        "applied_rule_ids": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "policy_evaluation": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "rule_id",
+          "risk",
+          "decision",
+          "evidence_count",
+          "missing_mitigation_keys"
+        ],
+        "properties": {
+          "rule_id": { "type": "string" },
+          "risk": { "type": "string" },
+          "decision": { "type": "string" },
+          "evidence_count": { "type": "integer", "minimum": 0 },
+          "missing_mitigation_keys": {
+            "type": "array",
+            "items": { "type": "string" }
+          }
+        }
+      }
+    },
+    "warnings": { "type": "array", "items": { "type": "string" } }
+  }
+}

@@ -63,6 +63,7 @@ def validate_run_outputs(run_dir: str | Path) -> Dict[str, Any]:
     targets: List[Tuple[str, str]] = [
         ("findings_metrics.json", "findings_metrics"),
         ("findings_requirements.json", "findings_requirements"),
+        ("findings_risk.json", "findings_risk"),
     ]
 
     for filename, schema_name in targets:
