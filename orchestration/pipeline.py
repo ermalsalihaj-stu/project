@@ -51,6 +51,7 @@ def run_pipeline(bundle_path: str, out_dir: str | None = None) -> str:
       - Metrics Agent -> findings_metrics.json
       - UX/Requirements Agent -> findings_requirements.json
       - Backlog writer -> backlog.csv
+      - Tech Feasibility & Delivery Agent -> findings_feasibility.json
       - Placeholders for other artifacts
 
     Creates runs/YYYY-MM-DD_HHMM_<bundle_name>/ and returns its path.
@@ -174,7 +175,53 @@ def run_pipeline(bundle_path: str, out_dir: str | None = None) -> str:
         # Ensure backlog exists even if generation failed
         _create_placeholders(target_dir)
 
-    # 5) Placeholders for other artifacts
+    # 5) Tech Feasibility & Delivery Agent (Agent F): findings_feasibility.json (always write something)
+    try:
+        from agents.feasibility_delivery_agent import run as feasibility_run
+
+        # Best-effort load of requirements findings for richer phasing/complexity context
+        req_findings_path = target_dir / "findings_requirements.json"
+        try:
+            findings_requirements = (
+                read_json(req_findings_path) if req_findings_path.exists() else None
+            )
+        except Exception:
+            findings_requirements = None
+
+        feasibility_findings = feasibility_run(context_packet, findings_requirements)
+        write_json(target_dir / "findings_feasibility.json", feasibility_findings)
+    except Exception as e:
+        log.warning("Feasibility & delivery agent failed: %s", e)
+        write_json(
+            target_dir / "findings_feasibility.json",
+            {
+                "bundle_id": bundle_name,
+                "dependencies": [],
+                "constraints": [],
+                "complexity": [],
+                "phases": {
+                    "MVP": {
+                        "in_scope": [],
+                        "out_of_scope": [],
+                        "prerequisites": [],
+                    },
+                    "V1": {
+                        "in_scope": [],
+                        "out_of_scope": [],
+                        "prerequisites": [],
+                    },
+                    "V2": {
+                        "in_scope": [],
+                        "out_of_scope": [],
+                        "prerequisites": [],
+                    },
+                },
+                "build_vs_buy_triggers": [],
+                "warnings": [str(e)],
+            },
+        )
+
+    # 6) Placeholders for other artifacts
     _create_placeholders(target_dir)
 
     return str(target_dir)
