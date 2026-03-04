@@ -71,7 +71,11 @@ def cmd_run(args: argparse.Namespace) -> int:
         return 1
 
     try:
-        out_dir = run_pipeline(str(bundle_path))
+        out_dir = run_pipeline(
+            str(bundle_path),
+            strict=bool(getattr(args, "strict", False)),
+            fail_on_warnings=bool(getattr(args, "fail_on_warnings", False)),
+        )
         logger.info("Run complete. Output: %s", out_dir)
         return 0
     except Exception as e:
@@ -85,6 +89,8 @@ def main() -> int:
 
     run_parser = subparsers.add_parser("run", help="Run pipeline for a bundle")
     run_parser.add_argument("--bundle", required=True, help="Path to bundle, e.g. bundles/sample_01")
+    run_parser.add_argument("--strict", action="store_true", help="Fail if output JSON does not match schemas")
+    run_parser.add_argument("--fail-on-warnings", action="store_true", help="(Strict only) Fail if outputs contain warnings[]")
     run_parser.set_defaults(func=cmd_run)
 
     validate_parser = subparsers.add_parser("validate", help="Validate a bundle")

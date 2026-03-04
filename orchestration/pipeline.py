@@ -44,7 +44,7 @@ def _create_placeholders(out_dir: Path) -> None:
         )
 
 
-def run_pipeline(bundle_path: str, out_dir: str | None = None) -> str:
+def run_pipeline(bundle_path: str, out_dir: str | None = None, strict: bool = False, fail_on_warnings: bool = False) -> str:
     """
     Run the pipeline for the given bundle:
       - Intake Agent -> context_packet.json (+ evidence_index.json)
@@ -224,4 +224,29 @@ def run_pipeline(bundle_path: str, out_dir: str | None = None) -> str:
     # 6) Placeholders for other artifacts
     _create_placeholders(target_dir)
 
+        # --- Schema validation (Intern 3 hardening) ---
+    try:
+        from tools.schema_validator import validate_run_outputs
+        validation_report = validate_run_outputs(target_dir)
+        write_json(target_dir / "schema_validation.json", validation_report)
+
+        # Optional: treat "warnings" in outputs as failure if requested
+        warnings_found = False
+        for fname in ["findings_metrics.json", "findings_requirements.json"]:
+            p = target_dir / fname
+            if p.exists():
+                data = read_json(p)
+                if isinstance(data, dict) and data.get("warnings"):
+                    warnings_found = True
+
+        if strict and not validation_report.get("valid", False):
+            raise ValueError(f"Schema validation failed. See {target_dir / 'schema_validation.json'}")
+
+        if strict and fail_on_warnings and warnings_found:
+            raise ValueError(f"Strict mode: warnings present. See outputs in {target_dir}")
+    except Exception as e:
+        log.warning("Schema validation step failed: %s", e)
+        if strict:
+            raise
+        
     return str(target_dir)
