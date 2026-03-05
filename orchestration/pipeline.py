@@ -18,23 +18,7 @@ def _run_dir_name(bundle_name: str) -> str:
 
 
 def _create_placeholders(out_dir: Path) -> None:
-    """Create empty/placeholder artifact files in out_dir."""
-    placeholders = [
-        "prd.md",
-        "experiment_plan.md",
-        "decision_log.md",
-    ]
-    for name in placeholders:
-        p = out_dir / name
-        if not p.exists():
-            write_text(p, "")
-
-    # JSON placeholders
-    for name in ["roadmap.json"]:
-        p = out_dir / name
-        if not p.exists():
-            write_json(p, {})
-
+    """Create placeholder artifacts that are safe to overwrite by writers."""
     # CSV placeholder (header-only, so Excel opens it nicely)
     backlog_path = out_dir / "backlog.csv"
     if not backlog_path.exists():
@@ -53,7 +37,9 @@ def run_pipeline(bundle_path: str, out_dir: str | None = None, strict: bool = Fa
       - UX/Requirements Agent -> findings_requirements.json
       - Backlog writer -> backlog.csv
       - Tech Feasibility & Delivery Agent -> findings_feasibility.json
-      - Placeholders for other artifacts
+      - Risk / Guardrails Agent -> findings_risk.json
+      - Lead PM Agent -> final_recommendation.json
+      - Artifact writers -> prd.md, roadmap.json, experiment_plan.md, decision_log.md
 
     Creates runs/YYYY-MM-DD_HHMM_<bundle_name>/ and returns its path.
     """
@@ -278,6 +264,7 @@ def run_pipeline(bundle_path: str, out_dir: str | None = None, strict: bool = Fa
         ("findings_requirements", "findings_requirements.json"),
         ("findings_feasibility", "findings_feasibility.json"),
         ("findings_risk", "findings_risk.json"),
+        ("findings_competition", "findings_competition.json"),
     ]:
         p = target_dir / fname
         if p.exists():
@@ -293,27 +280,71 @@ def run_pipeline(bundle_path: str, out_dir: str | None = None, strict: bool = Fa
         write_json(target_dir / "final_recommendation.json", final_rec)
     except Exception as e:
         log.warning("Lead PM agent failed: %s", e)
-        write_json(
-            target_dir / "final_recommendation.json",
-            {
-                "bundle_id": bundle_name,
-                "executive_summary": "Lead PM synthesis failed; re-run pipeline after fixing agents.",
-                "problem_statement": "",
-                "recommended_direction": "Validate first",
-                "gating_decision": "Validate first",
-                "top_opportunities": [],
-                "top_risks": [str(e)],
-                "tradeoffs": [],
-                "assumptions": [],
-                "open_questions": ["Re-run pipeline to generate final_recommendation.json."],
-                "recommended_scope_now": [],
-                "recommended_scope_later": [],
-                "success_metrics": [],
-                "decision_rationale": f"Lead PM agent failed: {e}",
-            },
-        )
+        final_rec = {
+            "bundle_id": bundle_name,
+            "executive_summary": "Lead PM synthesis failed; re-run pipeline after fixing agents.",
+            "problem_statement": "",
+            "recommended_direction": "Validate first",
+            "gating_decision": "Validate first",
+            "top_opportunities": [],
+            "top_risks": [str(e)],
+            "tradeoffs": [],
+            "assumptions": [],
+            "open_questions": ["Re-run pipeline to generate final_recommendation.json."],
+            "recommended_scope_now": [],
+            "recommended_scope_later": [],
+            "success_metrics": [],
+            "decision_rationale": f"Lead PM agent failed: {e}",
+        }
+        write_json(target_dir / "final_recommendation.json", final_rec)
 
-    # 6) Placeholders for other artifacts
+    # 6) Final artifact writers (PRD, roadmap, experiment plan, decision log)
+    try:
+        from tools.prd_writer import write_prd
+        from tools.roadmap_writer import write_roadmap
+        from tools.experiment_writer import write_experiment_plan
+        from tools.decision_log_writer import write_decision_log
+
+        findings_customer = all_findings.get("findings_customer") or {}
+        findings_metrics = all_findings.get("findings_metrics") or {}
+        findings_requirements = all_findings.get("findings_requirements") or {}
+        findings_feasibility = all_findings.get("findings_feasibility") or {}
+        findings_risk = all_findings.get("findings_risk") or {}
+        findings_competition = all_findings.get("findings_competition") or {}
+
+        write_prd(
+            final_rec,
+            findings_customer=findings_customer,
+            findings_metrics=findings_metrics,
+            findings_requirements=findings_requirements,
+            findings_feasibility=findings_feasibility,
+            findings_risk=findings_risk,
+            out_path=target_dir / "prd.md",
+        )
+        write_roadmap(
+            final_rec,
+            findings_feasibility=findings_feasibility,
+            findings_risk=findings_risk,
+            out_path=target_dir / "roadmap.json",
+        )
+        write_experiment_plan(
+            final_rec,
+            findings_customer=findings_customer,
+            findings_metrics=findings_metrics,
+            findings_risk=findings_risk,
+            out_path=target_dir / "experiment_plan.md",
+        )
+        write_decision_log(
+            final_rec,
+            findings_risk=findings_risk,
+            findings_feasibility=findings_feasibility,
+            findings_competition=findings_competition,
+            out_path=target_dir / "decision_log.md",
+        )
+    except Exception as e:
+        log.warning("Artifact writers failed: %s", e)
+
+    # 7) Ensure backlog and other placeholders exist where needed
     _create_placeholders(target_dir)
 
         # --- Schema validation (Intern 3 hardening) ---
