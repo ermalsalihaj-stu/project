@@ -1,0 +1,66 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "final_recommendation.schema.json",
+  "title": "Final Recommendation (Lead PM)",
+  "description": "Synthesis of all findings into a single product decision: direction, scope, trade-offs, and rationale",
+  "type": "object",
+  "required": [
+    "bundle_id",
+    "executive_summary",
+    "problem_statement",
+    "recommended_direction",
+    "gating_decision",
+    "top_opportunities",
+    "top_risks",
+    "tradeoffs",
+    "assumptions",
+    "open_questions",
+    "recommended_scope_now",
+    "recommended_scope_later",
+    "success_metrics",
+    "decision_rationale"
+  ],
+  "properties": {
+    "bundle_id": { "type": "string" },
+    "executive_summary": { "type": "string" },
+    "problem_statement": { "type": "string" },
+    "recommended_direction": { "type": "string" },
+    "gating_decision": {
+      "type": "string",
+      "enum": ["Proceed", "Proceed with mitigations", "Validate first", "Do not pursue"]
+    },
+    "top_opportunities": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "top_risks": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "tradeoffs": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "assumptions": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "open_questions": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "recommended_scope_now": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "recommended_scope_later": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "success_metrics": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "decision_rationale": { "type": "string" }
+  }
+}
