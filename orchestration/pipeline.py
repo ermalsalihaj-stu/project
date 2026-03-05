@@ -19,7 +19,7 @@ def _run_dir_name(bundle_name: str) -> str:
 
 def _create_placeholders(out_dir: Path) -> None:
     """Create placeholder artifacts that are safe to overwrite by writers."""
-    # CSV placeholder (header-only, so Excel opens it nicely)
+    # backlog.csv
     backlog_path = out_dir / "backlog.csv"
     if not backlog_path.exists():
         write_text(
@@ -27,13 +27,47 @@ def _create_placeholders(out_dir: Path) -> None:
             "type,id,title,description,priority,epic_id,acceptance_criteria,linked_requirements,dependencies\n",
         )
 
+    # PRD
+    prd_path = out_dir / "prd.md"
+    if not prd_path.exists():
+        write_text(prd_path, "# PRD\n\nPending generation.\n")
 
-def run_pipeline(bundle_path: str, out_dir: str | None = None, strict: bool = False, fail_on_warnings: bool = False) -> str:
+    # Experiment plan
+    exp_path = out_dir / "experiment_plan.md"
+    if not exp_path.exists():
+        write_text(exp_path, "# Experiment Plan\n\nPending generation.\n")
+
+    # Decision log
+    decision_log_path = out_dir / "decision_log.md"
+    if not decision_log_path.exists():
+        write_text(decision_log_path, "# Decision Log\n\nPending generation.\n")
+
+    # Roadmap
+    roadmap_path = out_dir / "roadmap.json"
+    if not roadmap_path.exists():
+        write_json(
+            roadmap_path,
+            {
+                "mvp": [],
+                "v1": [],
+                "v2": [],
+                "warnings": ["placeholder roadmap"],
+            },
+        )
+
+
+def run_pipeline(
+    bundle_path: str,
+    out_dir: str | None = None,
+    strict: bool = False,
+    fail_on_warnings: bool = False,
+) -> str:
     """
     Run the pipeline for the given bundle:
       - Intake Agent -> context_packet.json (+ evidence_index.json)
       - Metrics Agent -> findings_metrics.json
       - Competitive & Positioning Agent -> findings_competition.json
+      - Customer Insights Agent -> findings_customer.json
       - UX/Requirements Agent -> findings_requirements.json
       - Backlog writer -> backlog.csv
       - Tech Feasibility & Delivery Agent -> findings_feasibility.json
@@ -54,13 +88,12 @@ def run_pipeline(bundle_path: str, out_dir: str | None = None, strict: bool = Fa
 
     log = get_logger("pipeline")
 
-    # 1) Intake Agent (Intern 3): context_packet.json + evidence_index.json
+    # 1) Intake Agent: context_packet.json + evidence_index.json
     try:
         from agents.intake_context_agent import run as intake_run
 
         intake_run(bundle_path, target_dir)
     except Exception as e:
-        # If intake fails, still write a minimal context packet so downstream agents don't crash
         write_json(
             target_dir / "context_packet.json",
             {
@@ -85,31 +118,32 @@ def run_pipeline(bundle_path: str, out_dir: str | None = None, strict: bool = Fa
         context_packet = {"bundle_id": bundle_name}
         log.warning("Failed to read context_packet.json: %s", e)
 
-    # 2) Metrics & Analytics Agent (Agent D): findings_metrics.json (always write something)
+    # Keep this defined for downstream agents even if requirements fail
+    req_findings = None
+
+    # 2) Metrics & Analytics Agent (Agent D): findings_metrics.json
     try:
         from agents.metrics_analytics_agent import run as metrics_run
 
-        findings = metrics_run(context_packet)
-        write_json(target_dir / "findings_metrics.json", findings)
+        findings_metrics = metrics_run(context_packet)
+        write_json(target_dir / "findings_metrics.json", findings_metrics)
     except Exception as e:
         log.warning("Metrics analytics agent failed: %s", e)
-        write_json(
-            target_dir / "findings_metrics.json",
-            {
-                "bundle_id": bundle_name,
-                "feature_area": "",
-                "goals": [],
-                "north_star_metric": None,
-                "input_metrics": [],
-                "guardrails": [],
-                "event_taxonomy": [],
-                "issues": ["metrics_agent_failed"],
-                "recommendations": [],
-                "warnings": [str(e)],
-            },
-        )
+        findings_metrics = {
+            "bundle_id": bundle_name,
+            "feature_area": "",
+            "goals": [],
+            "north_star_metric": None,
+            "input_metrics": [],
+            "guardrails": [],
+            "event_taxonomy": [],
+            "issues": ["metrics_agent_failed"],
+            "recommendations": [],
+            "warnings": [str(e)],
+        }
+        write_json(target_dir / "findings_metrics.json", findings_metrics)
 
-    # 2b) Competitive & Positioning Agent (Agent C): findings_competition.json (always write something)
+    # 2b) Competitive & Positioning Agent (Agent C): findings_competition.json
     try:
         from agents.competitive_positioning_agent import run as comp_run
 
@@ -117,22 +151,20 @@ def run_pipeline(bundle_path: str, out_dir: str | None = None, strict: bool = Fa
         write_json(target_dir / "findings_competition.json", findings_competition)
     except Exception as e:
         log.warning("Competitive & positioning agent failed: %s", e)
-        write_json(
-            target_dir / "findings_competition.json",
-            {
-                "bundle_id": bundle_name,
-                "generated_at": datetime.now(timezone.utc).isoformat(),
-                "competitors": [],
-                "parity_opportunities": [],
-                "differentiation_opportunities": [],
-                "recommended_positioning": "",
-                "messaging_pillars": [],
-                "research_gaps": [
-                    "Competitive & positioning agent failed; collect competitor data and re-run."
-                ],
-                "warnings": [str(e)],
-            },
-        )
+        findings_competition = {
+            "bundle_id": bundle_name,
+            "generated_at": datetime.now(timezone.utc).isoformat(),
+            "competitors": [],
+            "parity_opportunities": [],
+            "differentiation_opportunities": [],
+            "recommended_positioning": "",
+            "messaging_pillars": [],
+            "research_gaps": [
+                "Competitive & positioning agent failed; collect competitor data and re-run."
+            ],
+            "warnings": [str(e)],
+        }
+        write_json(target_dir / "findings_competition.json", findings_competition)
 
     # 2c) Customer Insights Agent (Agent B): findings_customer.json
     try:
@@ -142,24 +174,71 @@ def run_pipeline(bundle_path: str, out_dir: str | None = None, strict: bool = Fa
         write_json(target_dir / "findings_customer.json", findings_customer)
     except Exception as e:
         log.warning("Customer insights agent failed: %s", e)
-        write_json(
-            target_dir / "findings_customer.json",
-            {
-                "bundle_id": bundle_name,
-                "segments": [
-                    {"id": "all", "name": "All", "description": "Fallback (agent failed)."},
-                    {"id": "smb", "name": "SMB", "description": "Placeholder (agent failed)."},
-                ],
-                "jtbd": [{"id": "jtbd_fallback", "statement": "N/A", "context": str(e), "related_segments": ["All"]}],
-                "insights": [
-                    {"id": "insight_fallback", "statement": "Agent failed.", "evidence_refs": [], "confidence": "Speculative", "impacted_segments": ["All"]},
-                ] * 5,
-                "research_gaps": ["Customer insights agent failed; re-run after fix."] * 3,
-                "validation_plan": [{"step": 1, "method": "Re-run pipeline", "goal": "Obtain findings_customer.json"}, {"step": 2, "method": "N/A", "goal": "N/A"}, {"step": 3, "method": "N/A", "goal": "N/A"}],
-            },
-        )
+        findings_customer = {
+            "bundle_id": bundle_name,
+            "segments": [
+                {"id": "all", "name": "All", "description": "Fallback (agent failed)."},
+                {"id": "smb", "name": "SMB", "description": "Placeholder (agent failed)."},
+            ],
+            "jtbd": [
+                {
+                    "id": "jtbd_fallback",
+                    "statement": "N/A",
+                    "context": str(e),
+                    "related_segments": ["All"],
+                }
+            ],
+            "insights": [
+                {
+                    "id": "insight_fallback_1",
+                    "statement": "Agent failed.",
+                    "evidence_refs": [],
+                    "confidence": "Speculative",
+                    "impacted_segments": ["All"],
+                },
+                {
+                    "id": "insight_fallback_2",
+                    "statement": "Agent failed.",
+                    "evidence_refs": [],
+                    "confidence": "Speculative",
+                    "impacted_segments": ["All"],
+                },
+                {
+                    "id": "insight_fallback_3",
+                    "statement": "Agent failed.",
+                    "evidence_refs": [],
+                    "confidence": "Speculative",
+                    "impacted_segments": ["All"],
+                },
+                {
+                    "id": "insight_fallback_4",
+                    "statement": "Agent failed.",
+                    "evidence_refs": [],
+                    "confidence": "Speculative",
+                    "impacted_segments": ["All"],
+                },
+                {
+                    "id": "insight_fallback_5",
+                    "statement": "Agent failed.",
+                    "evidence_refs": [],
+                    "confidence": "Speculative",
+                    "impacted_segments": ["All"],
+                },
+            ],
+            "research_gaps": [
+                "Customer insights agent failed; re-run after fix.",
+                "Customer insights agent failed; re-run after fix.",
+                "Customer insights agent failed; re-run after fix.",
+            ],
+            "validation_plan": [
+                {"step": 1, "method": "Re-run pipeline", "goal": "Obtain findings_customer.json"},
+                {"step": 2, "method": "Review logs", "goal": "Find root cause"},
+                {"step": 3, "method": "Re-test", "goal": "Verify output"},
+            ],
+        }
+        write_json(target_dir / "findings_customer.json", findings_customer)
 
-    # 3) UX & Requirements Agent (Agent E): findings_requirements.json (always write something)
+    # 3) UX & Requirements Agent (Agent E): findings_requirements.json
     try:
         from agents.ux_requirements_agent import run as req_run
 
@@ -172,106 +251,71 @@ def run_pipeline(bundle_path: str, out_dir: str | None = None, strict: bool = Fa
         write_backlog_csv(req_findings, target_dir / "backlog.csv")
     except Exception as e:
         log.warning("UX requirements agent failed: %s", e)
-        write_json(
-            target_dir / "findings_requirements.json",
-            {
-                "bundle_id": bundle_name,
-                "summary": "",
-                "journeys": [],
-                "requirements": [],
-                "edge_cases": [],
-                "backlog": {"epics": [], "stories": []},
-                "warnings": [str(e)],
-            },
-        )
-        # Ensure backlog exists even if generation failed
+        req_findings = {
+            "bundle_id": bundle_name,
+            "summary": "",
+            "journeys": [],
+            "requirements": [],
+            "edge_cases": [],
+            "backlog": {"epics": [], "stories": []},
+            "warnings": [str(e)],
+        }
+        write_json(target_dir / "findings_requirements.json", req_findings)
         _create_placeholders(target_dir)
 
-    # 5) Tech Feasibility & Delivery Agent (Agent F): findings_feasibility.json (always write something)
+    # 5) Tech Feasibility & Delivery Agent (Agent F): findings_feasibility.json
     try:
         from agents.feasibility_delivery_agent import run as feasibility_run
 
-        # Best-effort load of requirements findings for richer phasing/complexity context
-        req_findings_path = target_dir / "findings_requirements.json"
-        try:
-            findings_requirements = (
-                read_json(req_findings_path) if req_findings_path.exists() else None
-            )
-        except Exception:
-            findings_requirements = None
-
-        feasibility_findings = feasibility_run(context_packet, findings_requirements)
+        feasibility_findings = feasibility_run(context_packet, req_findings)
         write_json(target_dir / "findings_feasibility.json", feasibility_findings)
     except Exception as e:
         log.warning("Feasibility & delivery agent failed: %s", e)
-        write_json(
-            target_dir / "findings_feasibility.json",
-            {
-                "bundle_id": bundle_name,
-                "dependencies": [],
-                "constraints": [],
-                "complexity": [],
-                "phases": {
-                    "MVP": {
-                        "in_scope": [],
-                        "out_of_scope": [],
-                        "prerequisites": [],
-                    },
-                    "V1": {
-                        "in_scope": [],
-                        "out_of_scope": [],
-                        "prerequisites": [],
-                    },
-                    "V2": {
-                        "in_scope": [],
-                        "out_of_scope": [],
-                        "prerequisites": [],
-                    },
-                },
-                "build_vs_buy_triggers": [],
-                "warnings": [str(e)],
+        feasibility_findings = {
+            "bundle_id": bundle_name,
+            "dependencies": [],
+            "constraints": [],
+            "complexity": [],
+            "phases": {
+                "MVP": {"in_scope": [], "out_of_scope": [], "prerequisites": []},
+                "V1": {"in_scope": [], "out_of_scope": [], "prerequisites": []},
+                "V2": {"in_scope": [], "out_of_scope": [], "prerequisites": []},
             },
-        )
+            "build_vs_buy_triggers": [],
+            "warnings": [str(e)],
+        }
+        write_json(target_dir / "findings_feasibility.json", feasibility_findings)
 
-        # 5b) Risk / Guardrails Agent (Agent G): findings_risk.json (always write something)
+    # 5b) Risk / Guardrails Agent (Agent G): findings_risk.json
     try:
         from agents.risk_guardrails_agent import run as risk_run
 
-        # Pass requirements findings if you have them (risk agent uses this to detect mitigations)
         risk_findings = risk_run(context_packet, findings_requirements=req_findings)
         write_json(target_dir / "findings_risk.json", risk_findings)
     except Exception as e:
         log.warning("Risk guardrails agent failed: %s", e)
-        write_json(
-            target_dir / "findings_risk.json",
-            {
-                "bundle_id": bundle_name,
-                "generated_at": datetime.now(timezone.utc).isoformat(),
-                "gating_decision": "Validate first",
-                "risks": [],
-                "required_mitigations": [],
-                "policy_pack": {"version": "unknown", "applied_rule_ids": []},
-                "policy_evaluation": [],
-                "warnings": [str(e)],
-            },
-        )
+        risk_findings = {
+            "bundle_id": bundle_name,
+            "generated_at": datetime.now(timezone.utc).isoformat(),
+            "gating_decision": "Validate first",
+            "risks": [],
+            "required_mitigations": [],
+            "policy_pack": {"version": "unknown", "applied_rule_ids": []},
+            "policy_evaluation": [],
+            "warnings": [str(e)],
+        }
+        write_json(target_dir / "findings_risk.json", risk_findings)
 
     # 5c) Lead PM Agent: synthesize all findings -> final_recommendation.json
-    all_findings = {}
-    for key, fname in [
-        ("findings_customer", "findings_customer.json"),
-        ("findings_metrics", "findings_metrics.json"),
-        ("findings_requirements", "findings_requirements.json"),
-        ("findings_feasibility", "findings_feasibility.json"),
-        ("findings_risk", "findings_risk.json"),
-        ("findings_competition", "findings_competition.json"),
-    ]:
-        p = target_dir / fname
-        if p.exists():
-            try:
-                all_findings[key] = read_json(p)
-            except Exception as e:
-                log.warning("Could not load %s for Lead PM: %s", fname, e)
+    all_findings = {
+        "context_packet": context_packet,
+        "findings_customer": findings_customer,
+        "findings_metrics": findings_metrics,
+        "findings_requirements": req_findings or {},
+        "findings_feasibility": feasibility_findings,
+        "findings_risk": risk_findings,
+        "findings_competition": findings_competition,
+    }
 
     try:
         from agents.lead_pm_agent import run as lead_pm_run
@@ -294,7 +338,8 @@ def run_pipeline(bundle_path: str, out_dir: str | None = None, strict: bool = Fa
             "recommended_scope_now": [],
             "recommended_scope_later": [],
             "success_metrics": [],
-            "decision_rationale": f"Lead PM agent failed: {e}",
+            "decision_rationale": [f"Lead PM agent failed: {e}"],
+            "warnings": [str(e)],
         }
         write_json(target_dir / "final_recommendation.json", final_rec)
 
@@ -305,62 +350,95 @@ def run_pipeline(bundle_path: str, out_dir: str | None = None, strict: bool = Fa
         from tools.experiment_writer import write_experiment_plan
         from tools.decision_log_writer import write_decision_log
 
-        findings_customer = all_findings.get("findings_customer") or {}
-        findings_metrics = all_findings.get("findings_metrics") or {}
-        findings_requirements = all_findings.get("findings_requirements") or {}
-        findings_feasibility = all_findings.get("findings_feasibility") or {}
-        findings_risk = all_findings.get("findings_risk") or {}
-        findings_competition = all_findings.get("findings_competition") or {}
-
         write_prd(
             final_rec,
             findings_customer=findings_customer,
             findings_metrics=findings_metrics,
-            findings_requirements=findings_requirements,
-            findings_feasibility=findings_feasibility,
-            findings_risk=findings_risk,
+            findings_requirements=req_findings or {},
+            findings_feasibility=feasibility_findings,
+            findings_risk=risk_findings,
             out_path=target_dir / "prd.md",
         )
         write_roadmap(
             final_rec,
-            findings_feasibility=findings_feasibility,
-            findings_risk=findings_risk,
+            findings_feasibility=feasibility_findings,
+            findings_risk=risk_findings,
             out_path=target_dir / "roadmap.json",
         )
         write_experiment_plan(
             final_rec,
             findings_customer=findings_customer,
             findings_metrics=findings_metrics,
-            findings_risk=findings_risk,
+            findings_risk=risk_findings,
             out_path=target_dir / "experiment_plan.md",
         )
         write_decision_log(
             final_rec,
-            findings_risk=findings_risk,
-            findings_feasibility=findings_feasibility,
+            findings_risk=risk_findings,
+            findings_feasibility=feasibility_findings,
             findings_competition=findings_competition,
             out_path=target_dir / "decision_log.md",
         )
     except Exception as e:
         log.warning("Artifact writers failed: %s", e)
 
-    # 7) Ensure backlog and other placeholders exist where needed
+        if not (target_dir / "prd.md").exists():
+            write_text(target_dir / "prd.md", f"# PRD\n\nWriter fallback.\n\nError: {e}\n")
+
+        if not (target_dir / "roadmap.json").exists():
+            write_json(
+                target_dir / "roadmap.json",
+                {
+                    "mvp": [],
+                    "v1": [],
+                    "v2": [],
+                    "warnings": [str(e)],
+                },
+            )
+
+        if not (target_dir / "experiment_plan.md").exists():
+            write_text(
+                target_dir / "experiment_plan.md",
+                f"# Experiment Plan\n\nWriter fallback.\n\nError: {e}\n",
+            )
+
+        if not (target_dir / "decision_log.md").exists():
+            write_text(
+                target_dir / "decision_log.md",
+                f"# Decision Log\n\nWriter fallback.\n\nError: {e}\n",
+            )
+
+    # 7) Ensure final artifacts and backlog exist where needed
     _create_placeholders(target_dir)
 
-        # --- Schema validation (Intern 3 hardening) ---
+    # --- Schema validation ---
     try:
         from tools.schema_validator import validate_run_outputs
+
         validation_report = validate_run_outputs(target_dir)
         write_json(target_dir / "schema_validation.json", validation_report)
 
         # Optional: treat "warnings" in outputs as failure if requested
         warnings_found = False
-        for fname in ["findings_metrics.json", "findings_requirements.json"]:
+        for fname in [
+            "findings_metrics.json",
+            "findings_competition.json",
+            "findings_customer.json",
+            "findings_requirements.json",
+            "findings_feasibility.json",
+            "findings_risk.json",
+            "final_recommendation.json",
+            "roadmap.json",
+        ]:
             p = target_dir / fname
             if p.exists():
-                data = read_json(p)
-                if isinstance(data, dict) and data.get("warnings"):
-                    warnings_found = True
+                try:
+                    data = read_json(p)
+                    if isinstance(data, dict) and data.get("warnings"):
+                        warnings_found = True
+                except Exception:
+                    # Non-JSON or malformed file should be caught by schema validation if relevant
+                    pass
 
         if strict and not validation_report.get("valid", False):
             raise ValueError(f"Schema validation failed. See {target_dir / 'schema_validation.json'}")
@@ -371,5 +449,5 @@ def run_pipeline(bundle_path: str, out_dir: str | None = None, strict: bool = Fa
         log.warning("Schema validation step failed: %s", e)
         if strict:
             raise
-        
+
     return str(target_dir)
