@@ -65,6 +65,7 @@ def validate_run_outputs(run_dir: str | Path) -> Dict[str, Any]:
         ("findings_requirements.json", "findings_requirements"),
         ("findings_competition.json", "findings_competition"),
         ("findings_risk.json", "findings_risk"),
+        ("final_recommendation.json", "final_recommendation"),
     ]
 
     for filename, schema_name in targets:

@@ -270,6 +270,49 @@ def run_pipeline(bundle_path: str, out_dir: str | None = None, strict: bool = Fa
             },
         )
 
+    # 5c) Lead PM Agent: synthesize all findings -> final_recommendation.json
+    all_findings = {}
+    for key, fname in [
+        ("findings_customer", "findings_customer.json"),
+        ("findings_metrics", "findings_metrics.json"),
+        ("findings_requirements", "findings_requirements.json"),
+        ("findings_feasibility", "findings_feasibility.json"),
+        ("findings_risk", "findings_risk.json"),
+    ]:
+        p = target_dir / fname
+        if p.exists():
+            try:
+                all_findings[key] = read_json(p)
+            except Exception as e:
+                log.warning("Could not load %s for Lead PM: %s", fname, e)
+
+    try:
+        from agents.lead_pm_agent import run as lead_pm_run
+
+        final_rec = lead_pm_run(all_findings)
+        write_json(target_dir / "final_recommendation.json", final_rec)
+    except Exception as e:
+        log.warning("Lead PM agent failed: %s", e)
+        write_json(
+            target_dir / "final_recommendation.json",
+            {
+                "bundle_id": bundle_name,
+                "executive_summary": "Lead PM synthesis failed; re-run pipeline after fixing agents.",
+                "problem_statement": "",
+                "recommended_direction": "Validate first",
+                "gating_decision": "Validate first",
+                "top_opportunities": [],
+                "top_risks": [str(e)],
+                "tradeoffs": [],
+                "assumptions": [],
+                "open_questions": ["Re-run pipeline to generate final_recommendation.json."],
+                "recommended_scope_now": [],
+                "recommended_scope_later": [],
+                "success_metrics": [],
+                "decision_rationale": f"Lead PM agent failed: {e}",
+            },
+        )
+
     # 6) Placeholders for other artifacts
     _create_placeholders(target_dir)
 
