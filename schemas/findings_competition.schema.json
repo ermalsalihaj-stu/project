@@ -1,0 +1,84 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "findings_competition.schema.json",
+  "title": "Competitive & Positioning Findings",
+  "description": "Output of Agent C - competitors, parity/differentiation, positioning, messaging pillars, and research gaps.",
+  "type": "object",
+  "required": [
+    "bundle_id",
+    "generated_at",
+    "competitors",
+    "parity_opportunities",
+    "differentiation_opportunities",
+    "recommended_positioning",
+    "messaging_pillars",
+    "research_gaps"
+  ],
+  "properties": {
+    "bundle_id": {
+      "type": "string"
+    },
+    "generated_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "competitors": {
+      "type": "array",
+      "description": "List of key competitors with inferred strengths, weaknesses, and positioning.",
+      "items": {
+        "type": "object",
+        "required": ["name"],
+        "properties": {
+          "name": { "type": "string" },
+          "strengths": {
+            "type": "array",
+            "items": { "type": "string" }
+          },
+          "weaknesses": {
+            "type": "array",
+            "items": { "type": "string" }
+          },
+          "relevant_features": {
+            "type": "array",
+            "items": { "type": "string" }
+          },
+          "pricing_or_positioning_notes": {
+            "type": "string"
+          },
+          "target_segment": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "parity_opportunities": {
+      "type": "array",
+      "description": "Things we must match to avoid falling behind competitors.",
+      "items": { "type": "string" }
+    },
+    "differentiation_opportunities": {
+      "type": "array",
+      "description": "Areas where the product can clearly differentiate from competitors.",
+      "items": { "type": "string" }
+    },
+    "recommended_positioning": {
+      "type": "string",
+      "description": "High-level positioning statement: who it's for, value, why better than alternatives."
+    },
+    "messaging_pillars": {
+      "type": "array",
+      "description": "3–5 key messaging pillars that can be reused directly in PRDs / exec summaries.",
+      "items": { "type": "string" }
+    },
+    "research_gaps": {
+      "type": "array",
+      "description": "Explicit gaps or missing data points in the competitive analysis.",
+      "items": { "type": "string" }
+    },
+    "warnings": {
+      "type": "array",
+      "items": { "type": "string" }
+    }
+  }
+}
+

@@ -49,6 +49,7 @@ def run_pipeline(bundle_path: str, out_dir: str | None = None, strict: bool = Fa
     Run the pipeline for the given bundle:
       - Intake Agent -> context_packet.json (+ evidence_index.json)
       - Metrics Agent -> findings_metrics.json
+      - Competitive & Positioning Agent -> findings_competition.json
       - UX/Requirements Agent -> findings_requirements.json
       - Backlog writer -> backlog.csv
       - Tech Feasibility & Delivery Agent -> findings_feasibility.json
@@ -122,7 +123,32 @@ def run_pipeline(bundle_path: str, out_dir: str | None = None, strict: bool = Fa
             },
         )
 
-    # 2b) Customer Insights Agent (Agent B): findings_customer.json
+    # 2b) Competitive & Positioning Agent (Agent C): findings_competition.json (always write something)
+    try:
+        from agents.competitive_positioning_agent import run as comp_run
+
+        findings_competition = comp_run(context_packet)
+        write_json(target_dir / "findings_competition.json", findings_competition)
+    except Exception as e:
+        log.warning("Competitive & positioning agent failed: %s", e)
+        write_json(
+            target_dir / "findings_competition.json",
+            {
+                "bundle_id": bundle_name,
+                "generated_at": datetime.now(timezone.utc).isoformat(),
+                "competitors": [],
+                "parity_opportunities": [],
+                "differentiation_opportunities": [],
+                "recommended_positioning": "",
+                "messaging_pillars": [],
+                "research_gaps": [
+                    "Competitive & positioning agent failed; collect competitor data and re-run."
+                ],
+                "warnings": [str(e)],
+            },
+        )
+
+    # 2c) Customer Insights Agent (Agent B): findings_customer.json
     try:
         from agents.customer_insights_agent import run as customer_insights_run
 
