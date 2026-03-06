@@ -1,0 +1,370 @@
+TASK 1
+Title: Define Product Bundle contract and example bundles
+Description: Create the structured Product Bundle input format with JSON schemas and provide example bundles such as sample_01 and demo_saas_onboarding to support local pipeline runs.
+Acceptance Criteria:
+
+A bundle manifest schema exists
+
+Example bundle folders are available
+
+Example bundles include request, tickets, notes, metrics, and competitor inputs
+Status: Done
+Technical Notes: The repo includes bundle_manifest.schema.json and example bundle folders under bundles/.
+
+TASK 2
+Title: Implement bundle validation utility
+Description: Add validation for bundle structure and referenced files before pipeline execution, including manifest parsing, schema checks, and missing-file reporting.
+Acceptance Criteria:
+
+bundle_manifest.json is required
+
+Manifest JSON is schema-validated
+
+Missing referenced files are reported clearly
+
+Validation returns errors and warnings separately
+Status: Done
+Technical Notes: Implemented in tools/validate_bundle.py, which loads schemas and validates required bundle files.
+
+TASK 3
+Title: Build CLI for bundle validation and pipeline execution
+Description: Implement a command-line interface with run and validate commands, bundle path resolution, pre-run validation, and pipeline invocation.
+Acceptance Criteria:
+
+CLI supports run --bundle ...
+
+CLI supports validate --bundle ...
+
+Invalid bundle paths fail with a clear error
+
+run validates the bundle before executing the pipeline
+Status: Done
+Technical Notes: main.py is the entrypoint and delegates to cli/app.py.
+
+TASK 4
+Title: Implement Intake & Context agent
+Description: Build the gatekeeper agent that normalizes ticket input, applies ignore rules, deduplicates tickets, detects missing information, tags risk hotspots, and writes context_packet.json plus evidence_index.json.
+Acceptance Criteria:
+
+Tickets are normalized into a common structure
+
+Ignore rules are applied
+
+Duplicate tickets are flagged
+
+Missing-info questions are generated
+
+Risk hotspots are attached to the context packet
+
+context_packet.json and evidence_index.json can be produced
+Status: Done
+Technical Notes: The agent loads ignore_rules.yaml and risk_keywords.yaml and includes duplicates, missing_info, ignored_items, and risk_hotspots in the context packet.
+
+TASK 5
+Title: Implement Customer Insights agent
+Description: Add an agent that derives user segments, JTBD, insights, research gaps, and a lightweight validation plan from tickets and customer notes.
+Acceptance Criteria:
+
+User segments are extracted or inferred
+
+JTBD is generated
+
+Customer insights are produced
+
+Research gaps are listed
+
+Validation plan is included in output
+Status: Done
+Technical Notes: The output shape includes segments, jtbd, insights, research_gaps, and validation_plan.
+
+TASK 6
+Title: Implement Metrics & Analytics agent
+Description: Add an agent that defines the feature area, goals, North Star metric, input metrics, guardrails, event taxonomy, integrity issues, and recommendations from the bundle context.
+Acceptance Criteria:
+
+Feature area is identified
+
+North Star metric is generated
+
+Input metrics and guardrails are listed
+
+Event taxonomy is produced
+
+Metric integrity issues and recommendations are returned
+Status: Done
+Technical Notes: The agent returns feature_area, goals, north_star_metric, input_metrics, guardrails, event_taxonomy, issues, and recommendations.
+
+TASK 7
+Title: Implement UX Requirements agent and backlog export
+Description: Build the requirements agent that produces journeys, requirements with acceptance criteria, edge cases, and backlog data, then export that backlog into backlog.csv.
+Acceptance Criteria:
+
+User journeys are generated
+
+Requirements include acceptance criteria
+
+Edge cases are captured
+
+Backlog contains epics and stories
+
+backlog.csv is written from requirements output
+Status: Done
+Technical Notes: The pipeline calls the UX agent and then write_backlog_csv(...) to generate the CSV backlog artifact.
+
+TASK 8
+Title: Implement Competitive & Positioning agent
+Description: Add an agent that parses competitor input, identifies parity vs. differentiation opportunities, and produces positioning plus messaging pillars.
+Acceptance Criteria:
+
+Competitor data can be parsed from bundle input
+
+Parity opportunities are identified
+
+Differentiation opportunities are identified
+
+Positioning statement is generated
+
+Messaging pillars are returned
+Status: Done
+Technical Notes: The agent includes logic for competitor parsing, parity/differentiation extraction, positioning, and messaging pillar generation.
+
+TASK 9
+Title: Implement Feasibility & Delivery agent
+Description: Add an agent that identifies dependencies, constraints, complexity, phased delivery plan, and build-vs-buy triggers from context and requirements.
+Acceptance Criteria:
+
+Technical dependencies are listed
+
+Constraints are identified
+
+Complexity buckets are assigned
+
+MVP/V1/V2 phase guidance is produced
+
+Build-vs-buy triggers are generated
+Status: Done
+Technical Notes: Output includes dependencies, constraints, complexity, phases, and build_vs_buy_triggers.
+
+TASK 10
+Title: Implement Risk Guardrails agent with YAML policy pack
+Description: Build a policy-driven risk agent that evaluates privacy, auth, accessibility, pricing, and platform risks and produces a gating decision with required mitigations.
+Acceptance Criteria:
+
+Risk keywords are loaded from policy
+
+Risk findings are categorized
+
+Applied rule IDs are recorded
+
+Required mitigations are returned
+
+A gating decision is produced
+Status: Done
+Technical Notes: The policy pack includes severity ranking, mitigation keywords, and rule-based decisions such as “Validate first” and “Proceed with mitigations.”
+
+TASK 11
+Title: Implement Lead PM synthesis agent
+Description: Add the final synthesis agent that consumes all findings and produces the final recommendation, including executive summary, problem statement, scope guidance, tradeoffs, open questions, and success metrics.
+Acceptance Criteria:
+
+Final recommendation JSON is produced
+
+Executive summary is included
+
+Gating decision is included
+
+Recommended scope now/later is included
+
+Success metrics are included
+Status: Done
+Technical Notes: The Lead PM output includes recommended_direction, gating_decision, tradeoffs, assumptions, open_questions, recommended_scope_now, and recommended_scope_later.
+
+TASK 12
+Title: Integrate end-to-end orchestration pipeline
+Description: Wire all agents together into one orchestration flow with safe fallbacks, output writing, and optional strict validation behavior.
+Acceptance Criteria:
+
+Pipeline runs agents in sequence
+
+Each agent output is persisted to the run directory
+
+Fallback payloads are created if an agent fails
+
+Strict mode can fail on schema problems
+
+Run directory path is returned on success
+Status: Done
+Technical Notes: run_pipeline(...) coordinates agents, writes artifacts, creates placeholders when needed, and can fail in strict mode if schema validation fails.
+
+TASK 13
+Title: Add schema validation for run outputs
+Description: Validate produced JSON outputs against schemas and skip files whose schemas are not yet available, while still generating a validation report.
+Acceptance Criteria:
+
+Known JSON outputs can be validated after a run
+
+Missing schemas do not crash validation
+
+Validation report includes per-file results
+
+Overall valid flag reflects failures correctly
+Status: In Progress
+Technical Notes: Current validation covers selected outputs and explicitly skips files when schema files are missing.
+
+TASK 14
+Title: Generate final PM artifacts
+Description: Add artifact writers for prd.md, roadmap.json, experiment_plan.md, and decision_log.md, and integrate them into the pipeline.
+Acceptance Criteria:
+
+PRD writer exists
+
+Roadmap writer exists
+
+Experiment plan writer exists
+
+Decision log writer exists
+
+Pipeline writes all four artifacts to the output directory
+Status: Done
+Technical Notes: The end-to-end test expects all final artifacts, including prd.md, roadmap.json, experiment_plan.md, and decision_log.md.
+
+TASK 15
+Title: Add smoke and end-to-end automated tests
+Description: Create automated tests to verify that a minimal bundle and the reference sample bundle both produce expected outputs.
+Acceptance Criteria:
+
+Smoke test builds a minimal bundle in temp storage
+
+Smoke test verifies core generated outputs
+
+End-to-end test runs against bundles/sample_01
+
+End-to-end test verifies all final artifacts exist
+Status: Done
+Technical Notes: Tests cover both core pipeline outputs and final artifact generation.
+
+TASK 16
+Title: Implement tracker/API integration layer
+Description: Build the missing integration layer for external systems such as Jira/ADO and expose an API or service entrypoint for non-CLI execution. This is inferred from the empty api/ and integrations/ scaffolds.
+Acceptance Criteria:
+
+A tracker client can authenticate and fetch issues
+
+External tracker data can be mapped into the Product Bundle format
+
+Pipeline can be triggered without direct CLI usage
+
+Error handling exists for failed tracker/API calls
+Status: To Do
+Technical Notes: Both api/ and integrations/ currently contain only placeholder files.
+
+TASK 17
+Title: Add project documentation, prompts, templates, and config assets
+Description: Flesh out the missing developer and user-facing assets for docs, prompts, templates, config, and README so the project is easier to understand and operate. This is inferred from the mostly empty scaffolds and minimal README.
+Acceptance Criteria:
+
+README explains setup, bundle format, and usage
+
+docs/ contains architecture and run instructions
+
+prompts/ contains reusable prompt assets if needed
+
+templates/ contains reusable artifact or bundle templates
+
+config/ contains environment/configuration defaults
+Status: To Do
+Technical Notes: README.md is currently only a single-line title, and several support folders are still empty placeholders.
+
+If you want, I can turn these into a cleaner Jira import style next, with priorities and suggested epics.
+
+
+
+
+
+Yes — here is the task-by-task ownership based on the commit history. For the mixed tasks, I marked Primary and Support so you can decide who should be the Jira assignee. The repo has 31 commits, and the visible authored work is split mainly across ermalsalihaj-genpact, lorikrracii, and Leart-Jahiri.
+
+TASK 1 — Define Product Bundle contract and example bundles
+Primary: Leart (Leart-Jahiri)
+Support: Ermal (ermalsalihaj-genpact)
+Reason: Leart authored the structured Product Bundle specification with schema validation and reference sample, while Ermal added the Bundles folder. If you want only one Jira assignee, use Leart.
+
+TASK 2 — Implement bundle validation utility
+Primary: Leart (Leart-Jahiri)
+Reason: This maps most directly to the “structured Product Bundle specification with schema validation and reference sample” commit.
+
+TASK 3 — Build CLI for bundle validation and pipeline execution
+Primary: Ermal (ermalsalihaj-genpact)
+Reason: The commit history explicitly shows “Implement CLI + run skeleton” under Ermal.
+
+TASK 4 — Implement Intake & Context agent
+Primary: Lorik (lorikrracii)
+Reason: The commit history explicitly shows “Add intake/context agent MVP” under Lorik.
+
+TASK 5 — Implement Customer Insights agent
+Primary: Ermal (ermalsalihaj-genpact)
+Reason: The commit history explicitly shows “Add Customer Insights Agent” under Ermal.
+
+TASK 6 — Implement Metrics & Analytics agent
+Primary: Ermal (ermalsalihaj-genpact)
+Reason: The commit history explicitly shows “Implement Metrics & Analytics Agent” under Ermal.
+
+TASK 7 — Implement UX Requirements agent and backlog export
+Primary: Leart (Leart-Jahiri)
+Support: Lorik (lorikrracii)
+Reason: Leart authored “Add UX/requiremnts agent,” while Lorik later authored “Integrate pipeline, run requirements agent, generated backlog.csv and added smoke test.” If you want one Jira assignee, use Leart for the agent itself, or Lorik if you care more about the pipeline/export part.
+
+TASK 8 — Implement Competitive & Positioning agent
+Primary: Leart (Leart-Jahiri)
+Reason: The commit history explicitly shows “Implement competitive & positioning agent with schema” under Leart.
+
+TASK 9 — Implement Feasibility & Delivery agent
+Primary: Leart (Leart-Jahiri)
+Reason: The commit history explicitly shows “Add tech feasibility and delivery agent” under Leart.
+
+TASK 10 — Implement Risk Guardrails agent with YAML policy pack
+Primary: Lorik (lorikrracii)
+Reason: The commit history explicitly shows “Add risk guardrails agent with policy pack” under Lorik.
+
+TASK 11 — Implement Lead PM synthesis agent
+Primary: Ermal (ermalsalihaj-genpact)
+Reason: The commit history explicitly shows “Add Lead PM Agent” under Ermal.
+
+TASK 12 — Integrate end-to-end orchestration pipeline
+Primary: Lorik (lorikrracii)
+Reason: The commit history explicitly shows “Integrate pipeline, run requirements agent, generated backlog.csv and added smoke test,” and later “Final pipeline and make schema validation skip missing schemas,” both under Lorik.
+
+TASK 13 — Add schema validation for run outputs
+Primary: Lorik (lorikrracii)
+Secondary context: Leart contributed earlier schema-validation work for the bundle contract
+Reason: For the task wording you used, the best owner is Lorik, because the current commit history explicitly ties him to “Final pipeline and make schema validation skip missing schemas.”
+
+TASK 14 — Generate final PM artifacts
+Primary: Leart (Leart-Jahiri)
+Reason: The commit history explicitly shows “Add PRD, roadmap, experiment plan, and decision log artifact writers” under Leart. The final-output test file also checks for those exact artifacts.
+
+TASK 15 — Add smoke and end-to-end automated tests
+Primary: Lorik (lorikrracii)
+Support / likely shared: Leart (Leart-Jahiri)
+Reason: Lorik is definitely tied to the smoke-test work because his commit explicitly says “added smoke test.” The later end-to-end final-output check appears to align with Leart’s artifact-writer delivery, so this one is best treated as shared. If Jira needs one owner, use Lorik.
+
+TASK 16 — Implement tracker/API integration layer
+Owner: Unassigned
+Reason: api and integrations exist in the repo root, but the commit history I reviewed shows work on agents, pipeline, bundles, artifacts, and tests rather than a clear implementation commit for an API/integration layer.
+
+TASK 17 — Add project documentation, prompts, templates, and config assets
+Owner: Unassigned
+Reason: config, docs, prompts, and templates are present in the repo structure, but the README is still minimal and I do not see a specific authored commit clearly assigning this work yet.
+
+Here is the shortest usable assignee version:
+
+Ermal → Tasks 3, 5, 6, 11
+
+Lorik → Tasks 4, 10, 12, 13
+
+Leart → Tasks 2, 8, 9, 14
+
+Shared → Tasks 1, 7, 15
+
+Unassigned → Tasks 16, 17
+
+I can turn this into a final Jira-style list with an added Assignee: field under every task.
