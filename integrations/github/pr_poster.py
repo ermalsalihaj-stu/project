@@ -14,6 +14,9 @@ ARTIFACT_FILES = [
     "backlog.csv",
 ]
 
+# Marker at the start of our comment body so we can find and update it on re-runs
+AIPM_COMMENT_MARKER = "## AIPM Run Summary"
+
 
 def _read_json(path: Path) -> Any:
     with open(path, encoding="utf-8") as f:
@@ -90,16 +93,73 @@ def build_pr_message(run_dir: str | Path) -> str:
     return body.strip()
 
 
+def _get_issue_comments(
+    repo: str,
+    issue_number: int,
+    token: str,
+    api_base: str = "https://api.github.com",
+) -> list[dict[str, Any]]:
+    """GET issue/PR comments. Used to find existing AIPM comment for update."""
+    owner, repo_name = repo.split("/", 1) if "/" in repo else (repo, "")
+    if not repo_name:
+        raise ValueError("repo must be in form owner/repo")
+    url = f"{api_base.rstrip('/')}/repos/{owner}/{repo_name}/issues/{issue_number}/comments"
+    req = Request(
+        url,
+        headers={
+            "Accept": "application/vnd.github+json",
+            "Authorization": f"Bearer {token}",
+        },
+        method="GET",
+    )
+    with urlopen(req) as resp:
+        return json.loads(resp.read().decode("utf-8"))
+
+
+def _update_issue_comment(
+    comment_url: str,
+    body: str,
+    token: str,
+) -> dict[str, Any]:
+    """PATCH an issue comment by URL (from comment['url'])."""
+    req = Request(
+        comment_url,
+        data=json.dumps({"body": body}).encode("utf-8"),
+        headers={
+            "Accept": "application/vnd.github+json",
+            "Authorization": f"Bearer {token}",
+            "Content-Type": "application/json",
+        },
+        method="PATCH",
+    )
+    with urlopen(req) as resp:
+        return json.loads(resp.read().decode("utf-8"))
+
+
 def post_pr_comment(
     repo: str,
     pr_number: int,
     body: str,
     token: str,
+    update_if_exists: bool = False,
     api_base: str = "https://api.github.com",
 ) -> dict[str, Any]:
+    """
+    Post an issue/PR comment. If update_if_exists=True, find an existing comment
+    that starts with AIPM_COMMENT_MARKER and PATCH it instead of posting a new one.
+    """
     owner, repo_name = repo.split("/", 1) if "/" in repo else (repo, "")
     if not repo_name:
         raise ValueError("repo must be in form owner/repo")
+
+    if update_if_exists:
+        try:
+            comments = _get_issue_comments(repo, pr_number, token, api_base)
+            for c in comments:
+                if (c.get("body") or "").strip().startswith(AIPM_COMMENT_MARKER):
+                    return _update_issue_comment(c["url"], body, token)
+        except (HTTPError, URLError, RuntimeError):
+            pass
 
     url = f"{api_base.rstrip('/')}/repos/{owner}/{repo_name}/issues/{pr_number}/comments"
     data = json.dumps({"body": body}).encode("utf-8")

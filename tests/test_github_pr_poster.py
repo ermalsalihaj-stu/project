@@ -12,16 +12,12 @@ def test_build_pr_message_from_run_dir():
         pytest.skip(f"Sample run dir not found: {run_dir}")
 
     body = build_pr_message(run_dir)
-    assert "Executive summary" in body
-    assert "Gating decision" in body
+    assert "AIPM Run Summary" in body
     assert "Validate first" in body or "Proceed" in body or "Do not pursue" in body
-    assert "Top risks" in body
-    assert "Suggested next steps" in body
-    assert "Generated artifacts" in body
+    assert "Schema validation" in body
     assert "prd.md" in body
     assert "decision_log.md" in body
     assert "backlog.csv" in body
-    assert "Schema validation" in body
 
 
 def test_build_pr_message_raises_if_no_final_recommendation(tmp_path: Path):

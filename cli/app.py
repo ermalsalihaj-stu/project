@@ -9,6 +9,13 @@ from pathlib import Path
 # Project root is parent of cli/
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 
+# Load .env from project root so GITHUB_* are available for post-pr
+try:
+    from dotenv import load_dotenv
+    load_dotenv(PROJECT_ROOT / ".env")
+except ImportError:
+    pass
+
 
 def _resolve_bundle_path(bundle_arg: str) -> Path:
     """Resolve bundle path to absolute; accept 'bundles/sample_01' or path."""
@@ -123,8 +130,8 @@ def cmd_post_pr(args: argparse.Namespace) -> int:
 
     try:
         body = build_pr_message(run_path)
-        result = post_pr_comment(repo, int(pr_number), body, token)
-        print(f"Comment posted: {result.get('html_url', result)}")
+        result = post_pr_comment(repo, int(pr_number), body, token, update_if_exists=not getattr(args, "new_comment", False))
+        print(f"Comment posted/updated: {result.get('html_url', result)}")
         return 0
     except FileNotFoundError as e:
         print(f"Error: {e}", file=sys.stderr)
@@ -153,6 +160,7 @@ def main() -> int:
         help="Post run summary as a PR comment (uses GITHUB_TOKEN, GITHUB_REPO, GITHUB_PR_NUMBER)",
     )
     post_pr_parser.add_argument("--run-dir", required=True, help="Run directory, e.g. runs/2026-03-05_1638_sample_01")
+    post_pr_parser.add_argument("--new", dest="new_comment", action="store_true", help="Always post a new comment (default: update existing AIPM comment if present)")
     post_pr_parser.add_argument("--token", default=None, help="GitHub token (default: GITHUB_TOKEN)")
     post_pr_parser.add_argument("--repo", default=None, help="Repo owner/name (default: GITHUB_REPO)")
     post_pr_parser.add_argument("--pr", type=int, default=None, dest="pr_number", help="PR number (default: GITHUB_PR_NUMBER)")
