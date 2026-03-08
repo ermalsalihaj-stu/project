@@ -450,4 +450,20 @@ def run_pipeline(
         if strict:
             raise
 
+    # Optional: automatically post run summary to PR when GitHub env vars are set
+    import os
+    if all(os.environ.get(k) for k in ("GITHUB_TOKEN", "GITHUB_REPO", "GITHUB_PR_NUMBER")):
+        try:
+            from integrations.github.pr_poster import build_pr_message, post_pr_comment
+            post_pr_comment(
+                os.environ["GITHUB_REPO"],
+                int(os.environ["GITHUB_PR_NUMBER"]),
+                build_pr_message(target_dir),
+                os.environ["GITHUB_TOKEN"],
+                update_if_exists=True,
+            )
+            log.info("Posted run summary to PR")
+        except Exception as e:
+            log.warning("GitHub PR post failed (optional): %s", e)
+
     return str(target_dir)
