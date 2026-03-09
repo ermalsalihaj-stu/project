@@ -141,6 +141,39 @@ def cmd_post_pr(args: argparse.Namespace) -> int:
         return 1
 
 
+def cmd_ingest_jira(args: argparse.Namespace) -> int:
+    """Ingest Jira (JQL) into a local bundle; then run can use that bundle."""
+    from tools.logging_utils import get_logger, setup_logging
+
+    setup_logging()
+    log = get_logger("cli")
+
+    jql = getattr(args, "jql", None) or os.environ.get("JIRA_JQL", "")
+    if not jql.strip():
+        log.error("JQL required: set JIRA_JQL (env) or pass --jql")
+        return 1
+
+    try:
+        from integrations.jira.ingest import ingest_jira_to_bundle
+
+        bundle_path = ingest_jira_to_bundle(
+            jql=jql.strip(),
+            project_key=getattr(args, "project", None) or os.environ.get("JIRA_PROJECT"),
+            max_issues=int(getattr(args, "max_results", 500)),
+            include_comment_notes=bool(getattr(args, "comments", True)),
+            _issues_override=None,
+        )
+        log.info("Bundle created: %s", bundle_path)
+        print(bundle_path.resolve())
+        return 0
+    except ValueError as e:
+        log.error("%s", e)
+        return 1
+    except Exception as e:
+        log.exception("Ingest failed: %s", e)
+        return 1
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(prog="main.py", description="AI Product Manager CLI")
     subparsers = parser.add_subparsers(dest="command", required=True)
@@ -154,6 +187,16 @@ def main() -> int:
     validate_parser = subparsers.add_parser("validate", help="Validate a bundle")
     validate_parser.add_argument("--bundle", required=True, help="Path to bundle, e.g. bundles/sample_01")
     validate_parser.set_defaults(func=cmd_validate)
+
+    ingest_jira_parser = subparsers.add_parser(
+        "ingest-jira",
+        help="Ingest Jira issues (JQL) into a local bundle (uses JIRA_BASE_URL, JIRA_EMAIL, JIRA_API_TOKEN, or JIRA_JQL)",
+    )
+    ingest_jira_parser.add_argument("--jql", default=None, help="JQL query (default: JIRA_JQL env)")
+    ingest_jira_parser.add_argument("--project", default=None, help="Project key for bundle name (default: from JQL)")
+    ingest_jira_parser.add_argument("--max-results", type=int, default=500, help="Max issues to fetch")
+    ingest_jira_parser.add_argument("--no-comments", dest="comments", action="store_false", help="Skip customer_notes from comments")
+    ingest_jira_parser.set_defaults(func=cmd_ingest_jira)
 
     post_pr_parser = subparsers.add_parser(
         "post-pr",
